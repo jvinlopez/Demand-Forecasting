@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monthly Demand Forecasting</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #282c34;
+            color: #ffffff;
+        }
+        .container {
+            max-width: 400px;
+            width: 100%;
+            margin: 20px auto;
+            padding: 20px;
+            background: #333;
+            border: 3px solid #444;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        .logo {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .logo img {
+            max-width: 80px;
+            border-radius: 8px;
+        }
+        h1 {
+            text-align: center;
+            font-size: 1.8em;
+        }
+        .input-group {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .input-group label {
+            white-space: nowrap;
+        }
+        .input-group select, .input-group input {
+            padding: 5px;
+            border: 1px solid #555;
+            border-radius: 4px;
+            background: #444;
+            color: #fff;
+        }
+        table {
+            width: 100%;
+            margin-top: 15px;
+            border-collapse: collapse;
+            background: #444;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        table th, table td {
+            border: 1px solid #555;
+            padding: 10px;
+            text-align: center;
+            color: #fff;
+        }
+        table th {
+            background: #555;
+        }
+        table td input {
+            text-align: center;
+            width: 90%;
+            background: transparent;
+            border: 1px solid #666;
+            border-radius: 4px;
+            color: #fff;
+        }
+        .button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin-top: 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .button:hover {
+            background: #0056b3;
+        }
+        .results {
+            margin-top: 20px;
+            background: #444;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        .results h3 {
+            margin-bottom: 10px;
+        }
+        .results p {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhp3VrJcYLqPjT3fqtguwljuRFKfUzEtxam1T8dacAkDQIybluvRygnnW1WgY6hEr8Xdck-zrKpmoUbkqYwcv3TH7bdddYBIQMOY3CpsSm9ulcgQ_FLQyAkyhtfcujjIl1Q5Txm98pxyNNCFLHvQKM_9Iiha5a3Dc6wLO0wGrUYgfXb46JJfeOdXYqjBfI/w128-h128-p-k-no-nu/excellix.jpg" alt="Logo">
+        </div>
+        <h1>Monthly Demand Forecasting</h1>
+
+        <div class="input-group">
+            <label for="variableCount">Number of Variables:</label>
+            <select id="variableCount" onchange="updateInputFields()">
+                <option value="12">12</option>
+                <option value="24">24</option>
+                <option value="36">36</option>
+                <option value="48">48</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <label for="manualGrowthRate">Manual Growth Rate (%):</label>
+            <input type="number" id="manualGrowthRate" placeholder="Enter growth rate">
+        </div>
+
+        <div id="inputFields">
+            <h2>Inputs</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>X</th>
+                        <th>Y</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+
+        <button class="button" onclick="calculateForecast()">Calculate Forecast</button>
+
+        <div id="results" class="results" style="display: none;">
+            <h3>Results</h3>
+            <p id="equation"></p>
+            <p id="trendDirection"></p>
+            <p id="growthRate"></p>
+            <p id="forecastAnalysis"></p>
+            <h3>12-Month Forecast</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Month</th>
+                        <th>Forecasted Y</th>
+                    </tr>
+                </thead>
+                <tbody id="forecastTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function updateInputFields() {
+            const variableCount = parseInt(document.getElementById('variableCount').value);
+            const tableBody = document.getElementById('tableBody');
+            tableBody.innerHTML = '';
+
+            for (let i = 1; i <= variableCount; i++) {
+                const xValue = ((i - 1) % 12) + 1; // Cyclic X values (1 to 12)
+                tableBody.innerHTML += `
+                    <tr>
+                        <td><input type="number" id="x${i}" value="${xValue}" readonly></td>
+                        <td><input type="number" id="y${i}" placeholder="Enter Y${i}"></td>
+                    </tr>`;
+            }
+        }
+
+        function handlePaste(event) {
+            const clipboardData = event.clipboardData || window.clipboardData;
+            const pastedData = clipboardData.getData('Text').trim();
+
+            const activeElement = document.activeElement;
+            if (!activeElement || !activeElement.id.startsWith('y')) return;
+
+            const startIndex = parseInt(activeElement.id.substring(1)); // Extract the index from id (e.g., y1 -> 1)
+            const lines = pastedData.split('\n');
+
+            lines.forEach((line, offset) => {
+                const yValue = line.trim();
+                const targetInput = document.getElementById(`y${startIndex + offset}`);
+                if (targetInput && !isNaN(yValue)) {
+                    targetInput.value = yValue;
+                }
+            });
+        }
+
+        document.addEventListener('paste', handlePaste);
+
+        function calculateForecast() {
+            const variableCount = parseInt(document.getElementById('variableCount').value);
+            let manualGrowthRate = document.getElementById('manualGrowthRate').value;
+            manualGrowthRate = parseFloat(manualGrowthRate);
+            let xValues = [], yValues = [];
+
+            for (let i = 1; i <= variableCount; i++) {
+                const x = parseFloat(document.getElementById(`x${i}`).value);
+                const y = parseFloat(document.getElementById(`y${i}`).value);
+
+                if (isNaN(y)) {
+                    alert('Please fill in all the Y values.');
+                    return;
+                }
+
+                xValues.push(x);
+                yValues.push(y);
+            }
+
+            const n = xValues.length;
+            const meanX = xValues.reduce((sum, x) => sum + x, 0) / n;
+            const meanY = yValues.reduce((sum, y) => sum + y, 0) / n;
+            let covariance = 0, varianceX = 0;
+
+            for (let i = 0; i < n; i++) {
+                covariance += (xValues[i] - meanX) * (yValues[i] - meanY);
+                varianceX += Math.pow(xValues[i] - meanX, 2);
+            }
+
+            const slope = covariance / varianceX;
+            const intercept = meanY - slope * meanX;
+
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('equation').innerText = `Equation: y = ${intercept.toFixed(2)} + ${slope.toFixed(2)}x`;
+
+            // Determine the direction of the trend
+            let trendMessage = '';
+            if (slope > 0) {
+                trendMessage = 'The equation indicates a positive (increasing) trend within the 12-period range.';
+            } else if (slope < 0) {
+                trendMessage = 'The equation indicates a negative (decreasing) trend within the 12-period range.';
+            } else {
+                trendMessage = 'The equation indicates a stable (no change) trend within the 12-period range.';
+            }
+            document.getElementById('trendDirection').innerText = trendMessage;
+
+            // Generate forecast analysis
+            const maxY = Math.max(...yValues);
+            const minY = Math.min(...yValues);
+            const peakMonth = xValues[yValues.indexOf(maxY)];
+            const lowMonth = xValues[yValues.indexOf(minY)];
+
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const peakMonthName = monthNames[(peakMonth - 1) % 12];
+const lowMonthName = monthNames[(lowMonth - 1) % 12];
+const forecastAnalysis = `Demand typically peaks in ${peakMonthName}, while it is lowest in ${lowMonthName}. This pattern indicates a clear seasonal fluctuation in demand.`;
+            document.getElementById('forecastAnalysis').innerText = forecastAnalysis;
+
+            // Calculate growth rate if applicable
+            let growthRate = 1;
+            if (!isNaN(manualGrowthRate)) {
+                growthRate = 1 + manualGrowthRate / 100;
+            } else if (variableCount >= 24) {
+                const last12 = yValues.slice(-12).reduce((a, b) => a + b, 0);
+                const previous12 = yValues.slice(-24, -12).reduce((a, b) => a + b, 0);
+                growthRate = last12 / previous12;
+                document.getElementById('growthRate').innerText = `Growth rate used for forecasting: ${(growthRate * 100 - 100).toFixed(2)}%`;
+            } else {
+                document.getElementById('growthRate').innerText = '';
+            }
+
+            // Calculate seasonality factors
+            const seasonalityFactors = Array(12).fill(0).map((_, idx) => {
+                let sumRatios = 0;
+                let count = 0;
+
+                for (let i = idx; i < yValues.length; i += 12) {
+                    const yHat = slope * xValues[i] + intercept;
+                    sumRatios += yValues[i] / yHat;
+                    count++;
+                }
+
+                return sumRatios / count;
+            });
+
+            const forecastTableBody = document.getElementById('forecastTableBody');
+            forecastTableBody.innerHTML = '';
+
+            for (let i = n + 1; i <= n + 12; i++) {
+                const x = ((i - 1) % 12) + 1;
+                const yHat = slope * x + intercept;
+                let forecastedY;
+                if (variableCount === 12) {
+                    forecastedY = isNaN(manualGrowthRate) ? yHat : yHat * growthRate;
+                } else {
+                    forecastedY = yHat * seasonalityFactors[x - 1] * growthRate;
+                }
+
+                forecastTableBody.innerHTML += `
+                    <tr>
+                        <td>Month ${i - n}</td>
+                        <td>${forecastedY.toFixed(2)}</td>
+                    </tr>`;
+            }
+        }
+
+        // Initialize input fields on load
+        window.onload = updateInputFields;
+    </script>
+</body>
+</html>

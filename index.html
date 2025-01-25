@@ -111,9 +111,10 @@
 </head>
 <body>
     <div class="container">
-        <div class="logo">
-            <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhp3VrJcYLqPjT3fqtguwljuRFKfUzEtxam1T8dacAkDQIybluvRygnnW1WgY6hEr8Xdck-zrKpmoUbkqYwcv3TH7bdddYBIQMOY3CpsSm9ulcgQ_FLQyAkyhtfcujjIl1Q5Txm98pxyNNCFLHvQKM_9Iiha5a3Dc6wLO0wGrUYgfXb46JJfeOdXYqjBfI/w128-h128-p-k-no-nu/excellix.jpg" alt="Logo">
-        </div>
+        <div class="logo" style="position: relative;">
+    <a href="https://jvinlopez.github.io/excellix/" style="position: absolute; top: 0; left: 0; text-decoration: none; color: white; font-size: 24px;" title="Home">🏠</a>
+    <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhp3VrJcYLqPjT3fqtguwljuRFKfUzEtxam1T8dacAkDQIybluvRygnnW1WgY6hEr8Xdck-zrKpmoUbkqYwcv3TH7bdddYBIQMOY3CpsSm9ulcgQ_FLQyAkyhtfcujjIl1Q5Txm98pxyNNCFLHvQKM_9Iiha5a3Dc6wLO0wGrUYgfXb46JJfeOdXYqjBfI/w128-h128-p-k-no-nu/excellix.jpg" alt="Logo">
+</div>
         <h1>Monthly Demand Forecasting</h1>
 
         <div class="input-group">
@@ -257,13 +258,19 @@
             const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 const peakMonthName = monthNames[(peakMonth - 1) % 12];
 const lowMonthName = monthNames[(lowMonth - 1) % 12];
-const forecastAnalysis = `Demand typically peaks in ${peakMonthName}, while it is lowest in ${lowMonthName}. This pattern indicates a clear seasonal fluctuation in demand.`;
+let forecastAnalysis;
+if (maxY === minY) {
+    forecastAnalysis = 'Demand is consistent throughout the year with no apparent seasonality.';
+} else {
+    forecastAnalysis = `Demand typically peaks in ${peakMonthName}, while it is lowest in ${lowMonthName}. This suggests a notable seasonal fluctuation in demand patterns, which could inform strategic decision-making.`;
+}
             document.getElementById('forecastAnalysis').innerText = forecastAnalysis;
 
             // Calculate growth rate if applicable
             let growthRate = 1;
             if (!isNaN(manualGrowthRate)) {
                 growthRate = 1 + manualGrowthRate / 100;
+                document.getElementById('growthRate').innerText = `Manual Growth Rate Applied: ${(manualGrowthRate).toFixed(2)}%`;
             } else if (variableCount >= 24) {
                 const last12 = yValues.slice(-12).reduce((a, b) => a + b, 0);
                 const previous12 = yValues.slice(-24, -12).reduce((a, b) => a + b, 0);
